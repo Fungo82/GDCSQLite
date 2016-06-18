@@ -8,136 +8,114 @@
 #import <sqlite3.h>
 #import "GDCDatabase.h"
 
-/* --- DEBUG --- */
-#define DEBUG_SQLMANAGER		@"FALSE" // VERIFICARE SE UTILIZZATA
-#define DEBUG_DBMANAGER			@"FALSE"
-#define DEBUG_DB_ERROR_MANAGER	@"FALSE"
-#define DEBUG_DB_STACK			@"FALSE"
+/* ------ ERROR MESSAGE ------ */
 
-/* ------------- */
+#define GDCDATABASE_ERROR_EMPTY		@""
+#define GDCDATABASE_ERROR_REMOVE	@"Remove db error:"
+#define GDCDATABASE_ERROR_COPY		@"Copy db error:"
+
+/* ---------------------------- */
 
 @interface GDCDatabase(){
-// Create a sqlite object.
-sqlite3 *sqlite3Database;
+	// Create a sqlite object.
+	sqlite3 *sqlite3Database;
 
-// Set the database file path.
-NSString *databasePath;
+	// Database file path.
+	NSString *databasePath;
 
-// Open the database
-BOOL openDatabaseResult;
-
-// Load Stack
-NSMutableArray *loadStack;
-NSInteger indexLoadStack;
-
-// Execute Stack
-NSMutableArray *executeStack;
-NSInteger indexExecuteStack;
+	BOOL openDatabaseResult;
 }
+
+/**
+	Clean end init the result array
+ 
+ */
+- (void)initializeResultArray;
 
 /**
  * Check if db exist in Document path, otherwise copy the db in Document
  *
- * @author Germano Dario Carlino
+ * @param dbFilename The name of DataBase
+ *
+ */
+- (void)copyDatabaseIntoDocumentsDirectory:(callCompletationCallback)completation;
+
+/**
+ * Check if db exist in Document path, remove current db end copy the new db in Document
  *
  * @param dbFilename The name of DataBase
  *
  */
--(void)copyDatabaseIntoDocumentsDirectory:(callCompletationCallback)completation;
+- (void)removeAndCopyDatabaseIntoDocumentsDirectory:(callCompletationCallback)completation;
 
 /**
  * Run a query in two differnt mode in function of the type of query
- *
- * @author Germano Dario Carlino
  *
  * @param query The query to execute
  * @param queryExecutable To inform the method if is a executable query like insert, update, delete
  *
  */
--(void)runQuery:(const char *)query isQueryExecutable:(BOOL)queryExecutable;
-
-- (void)pushLoadStack:(NSString *)query;
-
-- (void)popLoadStack;
-
-- (void)pushExecuteStack:(NSString *)query;
-
-- (void)popExecuteStack;
-
-- (void)cleanLoadStack;
-
-- (void)cleanExecuteStack;
+- (void)runQuery:(const char *)query isQueryExecutable:(BOOL)queryExecutable;
 
 @end
 
 @implementation GDCDatabase
 
 #pragma mark - INIT
--(instancetype)initWithDatabaseFilename:(NSString *)dbFilename force:(BOOL)force completation:(callCompletationCallback)completationo{
-	self = [super init];
-	if (self) {
+
+-(void)initWithDatabaseFilename:(NSString *)dbFilename force:(BOOL)force completation:(callCompletationCallback)completation{
+	
+	// Set the documents directory path to the documentsDirectory property.
+	NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+	self.documentsDirectory = [paths objectAtIndex:0];
+	
+	// Keep the database filename.
+	self.databaseFilename = dbFilename;
+	
+	if (force) {
 		
-		loadStack = [[NSMutableArray alloc] init];
-		indexLoadStack = 0;
+		// Copy the database file into the documents directory
+		[self removeAndCopyDatabaseIntoDocumentsDirectory:^(BOOL error, NSString *errorDescription) {
+			completation(error,errorDescription);
+		}];
+	}else{
 		
-		executeStack = [[NSMutableArray alloc] init];
-		indexExecuteStack = 0;
-		
-		// Set the documents directory path to the documentsDirectory property.
-		NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-		self.documentsDirectory = [paths objectAtIndex:0];
-		
-		// Keep the database filename.
-		self.databaseFilename = dbFilename;
-		//self.databaseFilename1 = @"barilla.sqlite";
-		
-		// Copy the database file into the documents directory if necessary.
-		if (force) {
-			NSString *destinationPath = [self.documentsDirectory stringByAppendingPathComponent:self.databaseFilename];
-			NSError *error;
-			if ([[NSFileManager defaultManager] fileExistsAtPath:destinationPath]) {
-				[[NSFileManager defaultManager] removeItemAtPath:destinationPath error:&error];
-				if (error != nil) {
-					NSLog(@"Remove db error %@", [error localizedDescription]);
-					completationo(YES,[NSString stringWithFormat:@"Remove db error: %@",[error localizedDescription]]);
-				}else{
-					NSLog(@"Remove db OK");
-					completationo(NO,@"");
-				}
-			}
-			NSString *sourcePath = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:self.databaseFilename];
-			
-			[[NSFileManager defaultManager] copyItemAtPath:sourcePath toPath:destinationPath error:&error];
-			
-			// Check if any error occurred during copying and display it.
-			if (error != nil) {
-				NSLog(@"Copy db error %@", [error localizedDescription]);
-				completationo(YES,[NSString stringWithFormat:@"Copy db error: %@",[error localizedDescription]]);
-			}else{
-				NSLog(@"Copy database OK");
-				completationo(NO,@"");
-			}
-		}else{
-			[self copyDatabaseIntoDocumentsDirectory:^(BOOL error, NSString *errorDescription) {
-				completationo(error,errorDescription);
-			}];
-		}
-		
-		
+		// Copy the database file into the documents directory if necessary
+		[self copyDatabaseIntoDocumentsDirectory:^(BOOL error, NSString *errorDescription) {
+			completation(error,errorDescription);
+		}];
 	}
-	return self;
+	
 }
 
-
 #pragma mark - METHODS
-/* --- METHODS --- */
+/* ###### METHODS ###### */
 
 #pragma mark - PRIVATE METHODS
-// PRIVATE
--(void)copyDatabaseIntoDocumentsDirectory:(callCompletationCallback)completation{
+// ------ PRIVATE ------
+
+- (void)initializeResultArray{
+	
+	// Initialize the values array.
+	if (self.valuesArray != nil) {
+		[self.valuesArray removeAllObjects];
+		self.valuesArray = nil;
+	}
+	self.valuesArray = [[NSMutableArray alloc] init];
+	
+	// Initialize the attributes array.
+	if (self.attributesArray != nil) {
+		[self.attributesArray removeAllObjects];
+		self.attributesArray = nil;
+	}
+	self.attributesArray = [[NSMutableArray alloc] init];
+}
+
+- (void)copyDatabaseIntoDocumentsDirectory:(callCompletationCallback)completation{
+	
+	NSString *destinationPath = [self.documentsDirectory stringByAppendingPathComponent:self.databaseFilename];
 	
 	// Check if the database file exists in the documents directory.
-	NSString *destinationPath = [self.documentsDirectory stringByAppendingPathComponent:self.databaseFilename];
 	if (![[NSFileManager defaultManager] fileExistsAtPath:destinationPath]) {
 		// The database file does not exist in the documents directory, so copy it from the main bundle now.
 		NSString *sourcePath = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:self.databaseFilename];
@@ -146,219 +124,170 @@ NSInteger indexExecuteStack;
 		
 		// Check if any error occurred during copying and display it.
 		if (error != nil) {
-			NSLog(@"%@", [error localizedDescription]);
+			completation(YES,[NSString stringWithFormat:@"%@ %@",GDCDATABASE_ERROR_COPY,[error localizedDescription]]);
 		}else{
-			NSLog(@"Copy database OK");
+			completation(NO,GDCDATABASE_ERROR_EMPTY);
 		}
+	}else{
+		completation(NO,GDCDATABASE_ERROR_EMPTY);
 	}
 	
 }
 
--(void)runQuery:(const char *)query isQueryExecutable:(BOOL)queryExecutable{
+- (void)removeAndCopyDatabaseIntoDocumentsDirectory:(callCompletationCallback)completation{
+	NSString *destinationPath = [self.documentsDirectory stringByAppendingPathComponent:self.databaseFilename];
+	NSError *error;
+	if ([[NSFileManager defaultManager] fileExistsAtPath:destinationPath]) {
+		[[NSFileManager defaultManager] removeItemAtPath:destinationPath error:&error];
+		if (error != nil) {
+			completation(YES,[NSString stringWithFormat:@"%@ %@",GDCDATABASE_ERROR_REMOVE,[error localizedDescription]]);
+			return;
+		}else{
+			//completation(NO,GDCDATABASE_ERROR_EMPTY);
+		}
+	}
+	NSString *sourcePath = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:self.databaseFilename];
+	[[NSFileManager defaultManager] copyItemAtPath:sourcePath toPath:destinationPath error:&error];
 	
+	// Check if any error occurred during copying and display it.
+	if (error != nil) {
+		completation(YES,[NSString stringWithFormat:@"%@ %@",GDCDATABASE_ERROR_COPY,[error localizedDescription]]);
+	}else{
+		completation(NO,GDCDATABASE_ERROR_EMPTY);
+	}
+}
+
+- (void)runQuery:(const char *)query isQueryExecutable:(BOOL)queryExecutable{
 	
-	if ([DEBUG_DBMANAGER isEqualToString:@"TRUE"]) {
+	if (self.DEBUG_SQLMANAGER) {
 		NSLog(@"QUERY: %s",query);
 	}
 	
-	
-	// Initialize the results array.
-	if (self.arrResults != nil) {
-		[self.arrResults removeAllObjects];
-		self.arrResults = nil;
+	if (self.valueToReplaceToNullValue == nil) {
+		self.valueToReplaceToNullValue = @"null";
 	}
-	self.arrResults = [[NSMutableArray alloc] init];
 	
-	// Initialize the column names array.
-	if (self.arrColumnNames != nil) {
-		[self.arrColumnNames removeAllObjects];
-		self.arrColumnNames = nil;
+	// Initialize the fetched data row array.
+	if (self.fetchedRowArray != nil) {
+		[self.fetchedRowArray removeAllObjects];
+		self.fetchedRowArray = nil;
 	}
-	self.arrColumnNames = [[NSMutableArray alloc] init];
+	self.fetchedRowArray = [[NSMutableArray alloc] init];
+	
 	
 	if(openDatabaseResult == SQLITE_OK) {
 		
-		// Declare a sqlite3_stmt object in which will be stored the query after having been compiled into a SQLite statement.
+		// Declare a sqlite3_stmt object, stored the query after having been compiled into a SQLite statement.
 		sqlite3_stmt *compiledStatement;
 		
-		if (queryExecutable) {
-			//sqlite3_exec(sqlite3Database,"BEGIN", 0, 0, 0);
-		}
-		
 		// Load all data from database to memory.
-		BOOL prepareStatementResult = sqlite3_prepare_v2(sqlite3Database, query, -1, &compiledStatement, NULL);
+		int prepareStatementResult = sqlite3_prepare_v2(sqlite3Database, query, -1, &compiledStatement, NULL);
 		
-		if(prepareStatementResult == SQLITE_OK) {
-			
-			// Check if the query is non-executable.
-			if (!queryExecutable){
-				// In this case data must be loaded from the database.
+		switch (prepareStatementResult) {
+			case SQLITE_OK:{
 				
-				// Declare an array to keep the data for each fetched row.
-				NSMutableArray *arrDataRow;
-				
-				// Loop through the results and add them to the results array row by row.
-				while(sqlite3_step(compiledStatement) == SQLITE_ROW) {
-					// Initialize the mutable array that will contain the data of a fetched row.
-					arrDataRow = [[NSMutableArray alloc] init];
+				if (!queryExecutable){
+					// In this case data must be loaded from the database.
 					
-					// Get the total number of columns.
-					int totalColumns = sqlite3_column_count(compiledStatement);
+					// Array to keep the data for each fetched row.
+					//NSMutableArray *dataRowArray;
 					
-					// Go through all columns and fetch each column data.
-					for (int i=0; i<totalColumns; i++){
-						// Convert the column data to text (characters).
-						char *dbDataAsChars = (char *)sqlite3_column_text(compiledStatement, i);
+					while(sqlite3_step(compiledStatement) == SQLITE_ROW) {
 						
-						// If there are contents in the currenct column (field) then add them to the current row array.
-						if (dbDataAsChars != NULL) {
-							// Convert the characters to string.
-							[arrDataRow addObject:[NSString  stringWithUTF8String:dbDataAsChars]];
-						}else{
-							// If parameter is null
-							[arrDataRow addObject:[NSString  stringWithUTF8String:"null"]];
+						//dataRowArray = [[NSMutableArray alloc] init];
+						
+						[self initializeResultArray];
+						
+						// Get the total number of columns.
+						int totalColumns	= sqlite3_column_count(compiledStatement);
+						char *dbAttribute;
+						char *dbValue;
+						
+						// Go through all columns and fetch each column data.
+						for (int i = 0; i < totalColumns; i++){
+							
+							// Convert the column data to text (characters).
+							dbAttribute	= (char *)sqlite3_column_name(compiledStatement, i);
+							dbValue		= (char *)sqlite3_column_text(compiledStatement, i);
+							
+							// If there are contents in the currenct column then add them to the current row array.
+							if (dbValue != NULL) {
+								// Convert the characters to string.
+								//[dataRowArray addObject:[NSString  stringWithUTF8String:dbValue]];
+								[self.valuesArray addObject:[NSString stringWithUTF8String:dbValue]];
+							}else{
+								// If parameter is null
+								//[dataRowArray addObject:self.valueToReplaceToNullValue];
+								[self.valuesArray addObject:self.valueToReplaceToNullValue];
+							}
+							
+							// Keep the current column name.
+							if (self.attributesArray.count != totalColumns) {
+								[self.attributesArray addObject:[NSString stringWithUTF8String:dbAttribute]];
+							}
 						}
 						
-						// Keep the current column name.
-						if (self.arrColumnNames.count != totalColumns) {
-							dbDataAsChars = (char *)sqlite3_column_name(compiledStatement, i);
-							[self.arrColumnNames addObject:[NSString stringWithUTF8String:dbDataAsChars]];
+						if (self.attributesArray.count > 0 && self.valuesArray.count > 0) {
+							// Store each fetched data row in the fetched array
+							[self.fetchedRowArray addObject:@[(NSArray *)self.attributesArray.copy,(NSArray *)self.valuesArray.copy]];
+						}
+						
+					}
+					
+					sqlite3_reset(compiledStatement);
+					compiledStatement = nil;
+					
+				}else {
+					
+					// Execute the query.
+					if (sqlite3_step(compiledStatement) == SQLITE_DONE) {
+						
+						// Keep the affected rows.
+						self.affectedRows = [NSNumber numberWithInt:sqlite3_changes(sqlite3Database)];
+						
+						// Keep the last inserted row ID.
+						self.lastInsertedRowID = [NSNumber numberWithInteger:sqlite3_last_insert_rowid(sqlite3Database)];
+						
+					}else {
+						// If could not execute the query
+						if (self.DEBUG_DBMANAGER) {
+							NSLog(@"DB Error: %s - Query: %s", sqlite3_errmsg(sqlite3Database),query);
 						}
 					}
-					
-					// Store each fetched data row in the results array, but first check if there is actually data.
-					if (arrDataRow.count > 0) {
-						[self.arrResults addObject:arrDataRow];
-					}
-					
-					
 				}
-				
-				sqlite3_reset(compiledStatement);
-				compiledStatement = nil;
+				break;
 			}
-			else {
-				// This is the case of an executable query (insert, update, ...).
+			default:{
 				
-				// Execute the query.
-				//BOOL executeQueryResults = sqlite3_step(compiledStatement);
-				if (sqlite3_step(compiledStatement) == SQLITE_DONE) {
-					
-					//sqlite3_exec(sqlite3Database, "COMMIT", 0, 0, 0);
-					
-					// Keep the affected rows.
-					self.affectedRows = sqlite3_changes(sqlite3Database);
-					
-					// Keep the last inserted row ID.
-					self.lastInsertedRowID = sqlite3_last_insert_rowid(sqlite3Database);
+				// In the database cannot be opened
+				if (self.DEBUG_DBMANAGER) {
+					NSLog(@"DB not opened %s", sqlite3_errmsg(sqlite3Database));
 				}
-				else {
-					// If could not execute the query show the error message on the debugger.
-					if ([DEBUG_DB_ERROR_MANAGER isEqualToString:@"TRUE"]) {
-						NSLog(@"DB Error: %s - Query: %s", sqlite3_errmsg(sqlite3Database),query);
-					}
-				}
+				break;
 			}
 		}
-		else {
-			// In the database cannot be opened then show the error message on the debugger.
-			if ([DEBUG_DB_ERROR_MANAGER isEqualToString:@"TRUE"]) {
-				NSLog(@"DB not opened %s", sqlite3_errmsg(sqlite3Database));
-			}
-		}
-		
 		// Release the compiled statement from memory.
 		sqlite3_finalize(compiledStatement);
-		
 	}
-	
-	if (queryExecutable) {
-		[self popExecuteStack];
-	}else{
-		[self popLoadStack];
-	}
-	
 }
 
-- (void)unzipMap:(NSString *)nomeFile{
-	/*
-	 //NSString *tilesPath = [self.documentsDirectory stringByAppendingPathComponent:@"tiles"];
-	 //dispatch_queue_t backgroundQueue = dispatch_queue_create("com.moko.it", 0);
-	 
-	 dispatch_async(dispatch_get_main_queue(), ^{
-	 //[self.titoloText setText:[NSString stringWithFormat:@"Current map: %@",nomeFile]];
-	 
-	 NSURL *URL = [NSURL URLWithString:[NSString stringWithFormat:@"file://%@",nomeFile]];
-	 
-	 NSError *errorMap;
-	 ZZArchive* zipArchive = [ZZArchive archiveWithURL:URL error:&errorMap];
-	 
-	 //[self.titoloText setText : @"Make folder: ..."];
-	 // Cicle to make folder structure
-	 unsigned long countFolder= zipArchive.entries.count;
-	 for(unsigned long i=0;i < countFolder; i++){
-	 
-	 ZZArchiveEntry *archiveEntry = zipArchive.entries[i];
-	 NSString *entryName = archiveEntry.fileName;
-	 NSString *lastCharacterName = [entryName substringFromIndex:entryName.length - 1];
-	 
-	 if([lastCharacterName isEqualToString:@"/"]){
-	 //NSData *zipDataRow = [archiveEntry newDataWithError:nil];
-	 NSString *folderRow = [self.documentsDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"%@",archiveEntry.fileName]];
-	 [[NSFileManager defaultManager] createDirectoryAtPath:folderRow withIntermediateDirectories:YES attributes:nil error:nil];
-	 
-	 }
-	 
-	 
-	 }
-	 
-	 // Cicle to save file
-	 unsigned long countFile = zipArchive.entries.count;
-	 for(unsigned long i=0;i < countFile; i++){
-	 ZZArchiveEntry *archiveEntry = zipArchive.entries[i];
-	 NSString *entryName = archiveEntry.fileName;
-	 NSString *lastCharacterName = [entryName substringFromIndex:entryName.length - 1];
-	 if(!([lastCharacterName isEqualToString:@"/"])){
-	 
-	 //NSString *zipRowPath = [NSString stringWithFormat:@"%@",entryName];
-	 NSString *zipRowPath = [NSString stringWithFormat:@"%@/%@",self.documentsDirectory,entryName];
-	 
-	 NSData *zipDataRow = [archiveEntry newDataWithError:nil];
-	 [zipDataRow writeToFile:zipRowPath atomically:NO];
-	 
-	 }
-	 
-	 }
-	 
-	 });
-	 */
-}
-
+// --------------------- end private methods
 
 #pragma mark - PUBLIC METHODS
-// PUBLIC
-#warning Inserire stack per loadQuery
--(NSArray *)loadDataFromDB:(NSString *)query{
-	// Run the query and indicate that is not executable.
-	// The query string is converted to a char* object.
+// ------ PUBLIC ------
+
+- (NSArray *)loadQuery:(NSString *)query{
+	
 	[self runQuery:[query UTF8String] isQueryExecutable:NO];
-	/*
-	 [self pushLoadStack:query];
-	 if (indexLoadStack == 1) {
-	 [self popLoadStack];
-	 }
-	 */
-	// Returned the loaded results.
-	return (NSArray *)self.arrResults;
+	
+	return (NSArray *)self.fetchedRowArray;
 }
 
--(void)executeQuery:(NSString *)query{
+- (NSArray *)executeQuery:(NSString *)query{
 	// Run the query and indicate that is executable.
-	//[self runQuery:[query UTF8String] isQueryExecutable:YES];
-	[self pushExecuteStack:query];
-	if (indexExecuteStack == 1) {
-		[self popExecuteStack];
-	}
+	[self runQuery:[query UTF8String] isQueryExecutable:YES];
+	
+	return @[self.affectedRows,self.lastInsertedRowID];
 }
 
 - (void)openConnection{
@@ -374,47 +303,6 @@ NSInteger indexExecuteStack;
 	sqlite3_close(sqlite3Database);
 }
 
-- (void)pushLoadStack:(NSString *)query{
-	[loadStack addObject:query];
-	indexLoadStack += 1;
-}
-
-- (void)popLoadStack{
-	
-	if ([DEBUG_DB_STACK isEqualToString:@"TRUE"]) {
-		NSLog(@"LOAD STACK: %@ --- INDEX: %li",loadStack,(long)indexLoadStack);
-	}
-	
-	if (indexLoadStack > 0) {
-		NSString *query = loadStack[indexLoadStack - 1];
-		indexLoadStack -= 1;
-		[self runQuery:[query UTF8String] isQueryExecutable:NO];
-	}
-}
-
-- (void)pushExecuteStack:(NSString *)query{
-	[executeStack addObject:query];
-	indexExecuteStack += 1;
-}
-
-- (void)popExecuteStack{
-	if (indexExecuteStack > 0) {
-		NSString *query = executeStack[indexExecuteStack - 1];
-		indexExecuteStack -= 1;
-		[executeStack removeObjectAtIndex:executeStack.count-1];
-		[self runQuery:[query UTF8String] isQueryExecutable:YES];
-	}
-}
-
-- (void)cleanLoadStack{
-	[loadStack removeAllObjects];
-	indexLoadStack = 0;
-}
-
-- (void)cleanExecuteStack{
-	[executeStack removeAllObjects];
-	indexExecuteStack = 0;
-}
-
+// -------------------- end public methods
 
 @end
