@@ -297,10 +297,18 @@
 	openDatabaseResult = sqlite3_open([databasePath UTF8String], &sqlite3Database);
 }
 
-- (void)closeConnection{
+- (NSString *)closeConnection{
 	
 	// Close the database.
-	sqlite3_close(sqlite3Database);
+	int returnValue = sqlite3_close_v2(sqlite3Database);
+	
+	if (returnValue == SQLITE_OK) {
+		return @"CLOSE CONNECTION";
+	}else if (returnValue == SQLITE_BUSY){
+		return @"NOT CLOSED IS BUSY";
+	}else{
+		return @"NOT CLOSED";
+	}
 }
 
 // -------------------- end public methods

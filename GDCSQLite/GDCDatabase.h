@@ -102,7 +102,7 @@ typedef void(^callCompletationCallback)(BOOL error,NSString *errorDescription);
  </p>
  
  */
-- (void)closeConnection;
+- (NSString *)closeConnection;
 
 // ***************************
 @end
