@@ -16,10 +16,11 @@
 		ED62E45D1D15651C003CC0F9 /* GDCTestSQLIteTests.m in Sources */ = {isa = PBXBuildFile; fileRef = ED62E45C1D15651C003CC0F9 /* GDCTestSQLIteTests.m */; };
 		ED62E4681D15651C003CC0F9 /* GDCTestSQLIteUITests.m in Sources */ = {isa = PBXBuildFile; fileRef = ED62E4671D15651C003CC0F9 /* GDCTestSQLIteUITests.m */; };
 		ED62E4791D1567BE003CC0F9 /* GDCDbTest.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = ED62E4781D1567BE003CC0F9 /* GDCDbTest.sqlite */; };
-		ED62E4841D156FD8003CC0F9 /* GDCSQLite.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ED62E4821D156D3F003CC0F9 /* GDCSQLite.framework */; };
-		ED62E4861D156FD8003CC0F9 /* GDCSQLite.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = ED62E4821D156D3F003CC0F9 /* GDCSQLite.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		ED62E4871D156FE6003CC0F9 /* GDCSQLite.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ED62E4821D156D3F003CC0F9 /* GDCSQLite.framework */; };
-		ED62E4881D156FE6003CC0F9 /* GDCSQLite.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = ED62E4821D156D3F003CC0F9 /* GDCSQLite.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		ED62E4921D159214003CC0F9 /* TestInterface.m in Sources */ = {isa = PBXBuildFile; fileRef = ED62E4911D159214003CC0F9 /* TestInterface.m */; };
+		ED62E4951D159881003CC0F9 /* Person.m in Sources */ = {isa = PBXBuildFile; fileRef = ED62E4941D159881003CC0F9 /* Person.m */; };
+		EDA10F4A1D16EB07004189DD /* GDCSQLite.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EDA10F491D16EB07004189DD /* GDCSQLite.framework */; };
+		EDA10F4B1D16EB0B004189DD /* GDCSQLite.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EDA10F491D16EB07004189DD /* GDCSQLite.framework */; };
+		EDA10F4C1D16EB0B004189DD /* GDCSQLite.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = EDA10F491D16EB07004189DD /* GDCSQLite.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,14 +41,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		ED62E4851D156FD8003CC0F9 /* Embed Frameworks */ = {
+		EDA10F001D16B192004189DD /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				ED62E4861D156FD8003CC0F9 /* GDCSQLite.framework in Embed Frameworks */,
-				ED62E4881D156FE6003CC0F9 /* GDCSQLite.framework in Embed Frameworks */,
+				EDA10F4C1D16EB0B004189DD /* GDCSQLite.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -72,7 +72,11 @@
 		ED62E4671D15651C003CC0F9 /* GDCTestSQLIteUITests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = GDCTestSQLIteUITests.m; sourceTree = "<group>"; };
 		ED62E4691D15651C003CC0F9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		ED62E4781D1567BE003CC0F9 /* GDCDbTest.sqlite */ = {isa = PBXFileReference; lastKnownFileType = file; path = GDCDbTest.sqlite; sourceTree = "<group>"; };
-		ED62E4821D156D3F003CC0F9 /* GDCSQLite.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = GDCSQLite.framework; sourceTree = "<group>"; };
+		ED62E4901D159214003CC0F9 /* TestInterface.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TestInterface.h; sourceTree = "<group>"; };
+		ED62E4911D159214003CC0F9 /* TestInterface.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TestInterface.m; sourceTree = "<group>"; };
+		ED62E4931D159881003CC0F9 /* Person.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Person.h; sourceTree = "<group>"; };
+		ED62E4941D159881003CC0F9 /* Person.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Person.m; sourceTree = "<group>"; };
+		EDA10F491D16EB07004189DD /* GDCSQLite.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = GDCSQLite.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -80,8 +84,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				ED62E4841D156FD8003CC0F9 /* GDCSQLite.framework in Frameworks */,
-				ED62E4871D156FE6003CC0F9 /* GDCSQLite.framework in Frameworks */,
+				EDA10F4A1D16EB07004189DD /* GDCSQLite.framework in Frameworks */,
+				EDA10F4B1D16EB0B004189DD /* GDCSQLite.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -105,7 +109,7 @@
 		ED62E4361D15651B003CC0F9 = {
 			isa = PBXGroup;
 			children = (
-				ED62E4821D156D3F003CC0F9 /* GDCSQLite.framework */,
+				EDA10F491D16EB07004189DD /* GDCSQLite.framework */,
 				ED62E4411D15651C003CC0F9 /* GDCTestSQLIte */,
 				ED62E45B1D15651C003CC0F9 /* GDCTestSQLIteTests */,
 				ED62E4661D15651C003CC0F9 /* GDCTestSQLIteUITests */,
@@ -131,6 +135,8 @@
 				ED62E4461D15651C003CC0F9 /* AppDelegate.m */,
 				ED62E4481D15651C003CC0F9 /* ViewController.h */,
 				ED62E4491D15651C003CC0F9 /* ViewController.m */,
+				ED62E4901D159214003CC0F9 /* TestInterface.h */,
+				ED62E4911D159214003CC0F9 /* TestInterface.m */,
 				ED62E44B1D15651C003CC0F9 /* Main.storyboard */,
 				ED62E44E1D15651C003CC0F9 /* Assets.xcassets */,
 				ED62E4501D15651C003CC0F9 /* LaunchScreen.storyboard */,
@@ -170,6 +176,8 @@
 			isa = PBXGroup;
 			children = (
 				ED62E4781D1567BE003CC0F9 /* GDCDbTest.sqlite */,
+				ED62E4931D159881003CC0F9 /* Person.h */,
+				ED62E4941D159881003CC0F9 /* Person.m */,
 			);
 			path = DB;
 			sourceTree = "<group>";
@@ -184,7 +192,7 @@
 				ED62E43B1D15651C003CC0F9 /* Sources */,
 				ED62E43C1D15651C003CC0F9 /* Frameworks */,
 				ED62E43D1D15651C003CC0F9 /* Resources */,
-				ED62E4851D156FD8003CC0F9 /* Embed Frameworks */,
+				EDA10F001D16B192004189DD /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -308,7 +316,9 @@
 			files = (
 				ED62E44A1D15651C003CC0F9 /* ViewController.m in Sources */,
 				ED62E4471D15651C003CC0F9 /* AppDelegate.m in Sources */,
+				ED62E4951D159881003CC0F9 /* Person.m in Sources */,
 				ED62E4441D15651C003CC0F9 /* main.m in Sources */,
+				ED62E4921D159214003CC0F9 /* TestInterface.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -542,6 +552,7 @@
 				ED62E46E1D15651C003CC0F9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		ED62E46F1D15651C003CC0F9 /* Build configuration list for PBXNativeTarget "GDCTestSQLIteTests" */ = {
 			isa = XCConfigurationList;
@@ -550,6 +561,7 @@
 				ED62E4711D15651C003CC0F9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		ED62E4721D15651C003CC0F9 /* Build configuration list for PBXNativeTarget "GDCTestSQLIteUITests" */ = {
 			isa = XCConfigurationList;
@@ -558,6 +570,7 @@
 				ED62E4741D15651C003CC0F9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

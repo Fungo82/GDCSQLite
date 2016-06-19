@@ -11,15 +11,26 @@
 
 @interface GDCDatabase : NSObject
 
-//Property
+#pragma mark - PROPERTY
+// ****** PROPERY ******
+
+/* ------ DEBUG ------ */
+@property (nonatomic) BOOL DEBUG_SQLMANAGER;
+@property (nonatomic) BOOL DEBUG_DBMANAGER;
+/* ---------------- */
+
+@property (nonatomic, strong) NSString *valueToReplaceToNullValue;
+
 @property (nonatomic, strong) NSString *documentsDirectory;
 @property (nonatomic, strong) NSString *databaseFilename;
-@property (nonatomic, strong) NSString *databaseFilename1;
 
-@property (nonatomic, strong) NSMutableArray *arrResults;
-@property (nonatomic, strong) NSMutableArray *arrColumnNames;
-@property (nonatomic) int affectedRows;
-@property (nonatomic) long long lastInsertedRowID;
+@property (nonatomic, strong) NSMutableArray *fetchedRowArray;
+@property (nonatomic, strong) NSMutableArray *valuesArray;
+@property (nonatomic, strong) NSMutableArray *attributesArray;
+@property (nonatomic, strong) NSNumber *affectedRows;
+@property (nonatomic, strong) NSNumber *lastInsertedRowID;
+
+// ***************************
 
 #pragma mark - CALLBACK
 
@@ -27,7 +38,7 @@
 
 /**
  <p>
-	Callback per la completation
+	Callback for completation
  </p>
  */
 typedef void(^callCompletationCallback)(BOOL error,NSString *errorDescription);
@@ -42,34 +53,71 @@ typedef void(^callCompletationCallback)(BOOL error,NSString *errorDescription);
 /**
  * Init the class instance and call the database check
  *
- * @author Germano Dario Carlino
- *
  * @param dbFilename The name of DataBase
  *
  */
--(instancetype)initWithDatabaseFilename:(NSString *)dbFilename force:(BOOL)force completation:(callCompletationCallback)completationo;
-
-
-/**
- * Load a query non executable
- *
- * @param query The query select to run
- *
- * @return an NSArray with 2 dimension, one to result and another with column attributes
- */
--(NSArray *)loadDataFromDB:(NSString *)query;
+-(void)initWithDatabaseFilename:(NSString *)dbFilename force:(BOOL)force completation:(callCompletationCallback)completation;
 
 /**
- * Load a query a executable
- *
- * @param query The query select to run
- *
+ <p>
+ Load a non executable query
+ </p>
+ 
+ @param query The query to load
+ 
+ @return an NSArray 
+	
+	 <br>
+	 [0] ->
+	 <br>
+	 fetchedRowArray with 2 dimension, any row
+	 <p>
+		[0]->(NSArray)Atributes
+	 <br>
+		[1]->(NSArray)Value
+	 </p>
+	 <br>
+	 <br>
+	 [1] ->
+	  errorMessage a NSString
  */
-- (void)executeQuery:(NSString *)query;
+- (NSArray *)loadQuery:(NSString *)query;
 
-- (void)openConnection;
+/**
+	Load a query a executable
 
-- (void)closeConnection;
+	@param query The query select to run
+
+	@return an NSArray with 2 dimension,
+	<p>
+		[0]->(NSNumber)RowAffected
+	<br>
+		[1]->(NSNumber)LastId
+	<br>
+		[2]->(NSString)ErrorMessage
+	</p>
+ */
+- (NSArray *)executeQuery:(NSString *)query;
+
+/**
+ <p>
+	Open connection
+ </p>
+ 
+ @return NSString message from sqlite3_open
+ 
+ */
+- (NSString *)openConnection;
+
+/**
+ <p>
+	Close connection
+ </p>
+ 
+ @return NSString message from sqlite3_close_v2
+ 
+ */
+- (NSString *)closeConnection;
 
 // ***************************
 @end
