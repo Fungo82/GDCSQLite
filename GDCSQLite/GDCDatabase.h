@@ -65,12 +65,21 @@ typedef void(^callCompletationCallback)(BOOL error,NSString *errorDescription);
  
  @param query The query to load
  
- @return an NSArray fetchedRowArray with 2 dimension, any row
- <p>
-	[0]->(NSArray)Atributes
- <br>
-	[1]->(NSArray)Value
- </p>
+ @return an NSArray 
+	
+	 <br>
+	 [0] ->
+	 <br>
+	 fetchedRowArray with 2 dimension, any row
+	 <p>
+		[0]->(NSArray)Atributes
+	 <br>
+		[1]->(NSArray)Value
+	 </p>
+	 <br>
+	 <br>
+	 [1] ->
+	  errorMessage a NSString
  */
 - (NSArray *)loadQuery:(NSString *)query;
 
@@ -84,6 +93,8 @@ typedef void(^callCompletationCallback)(BOOL error,NSString *errorDescription);
 		[0]->(NSNumber)RowAffected
 	<br>
 		[1]->(NSNumber)LastId
+	<br>
+		[2]->(NSString)ErrorMessage
 	</p>
  */
 - (NSArray *)executeQuery:(NSString *)query;
@@ -93,13 +104,17 @@ typedef void(^callCompletationCallback)(BOOL error,NSString *errorDescription);
 	Open connection
  </p>
  
+ @return NSString message from sqlite3_open
+ 
  */
-- (void)openConnection;
+- (NSString *)openConnection;
 
 /**
  <p>
 	Close connection
  </p>
+ 
+ @return NSString message from sqlite3_close_v2
  
  */
 - (NSString *)closeConnection;

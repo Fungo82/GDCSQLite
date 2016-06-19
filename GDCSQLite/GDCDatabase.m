@@ -14,6 +14,13 @@
 #define GDCDATABASE_ERROR_REMOVE	@"Remove db error:"
 #define GDCDATABASE_ERROR_COPY		@"Copy db error:"
 
+#define GDCDATABASE_OPEN_CONNECTION_OK		@"OPEN CONNECTION OK"
+#define GDCDATABASE_OPEN_CONNECTION_ERROR	@""
+
+#define GDCDATABASE_CLOSE_CONNECTION_OK		@"CLOSE CONNECTION OK"
+#define GDCDATABASE_CLOSE_CONNECTION_BUSY	@"NOT CLOSED IS BUSY"
+#define GDCDATABASE_CLOSE_CONNECTION_ERROR	@"NOT CLOSED"
+
 /* ---------------------------- */
 
 @interface GDCDatabase(){
@@ -23,7 +30,12 @@
 	// Database file path.
 	NSString *databasePath;
 
-	BOOL openDatabaseResult;
+	// Return value from sqlite3_open
+	int openDatabaseResult;
+	
+	// Error message
+	NSString *errorMessage;
+	
 }
 
 /**
@@ -86,6 +98,7 @@
 		}];
 	}
 	
+	openDatabaseResult = -1;
 }
 
 #pragma mark - METHODS
@@ -174,6 +187,9 @@
 	}
 	self.fetchedRowArray = [[NSMutableArray alloc] init];
 	
+	errorMessage = @"";
+	self.affectedRows		= [[NSNumber alloc] initWithInt:0];
+	self.lastInsertedRowID	= [[NSNumber alloc] initWithInt:0];
 	
 	if(openDatabaseResult == SQLITE_OK) {
 		
@@ -188,13 +204,8 @@
 				
 				if (!queryExecutable){
 					// In this case data must be loaded from the database.
-					
-					// Array to keep the data for each fetched row.
-					//NSMutableArray *dataRowArray;
-					
+	
 					while(sqlite3_step(compiledStatement) == SQLITE_ROW) {
-						
-						//dataRowArray = [[NSMutableArray alloc] init];
 						
 						[self initializeResultArray];
 						
@@ -206,11 +217,11 @@
 						// Go through all columns and fetch each column data.
 						for (int i = 0; i < totalColumns; i++){
 							
-							// Convert the column data to text (characters).
+							// Convert the column data to text.
 							dbAttribute	= (char *)sqlite3_column_name(compiledStatement, i);
 							dbValue		= (char *)sqlite3_column_text(compiledStatement, i);
 							
-							// If there are contents in the currenct column then add them to the current row array.
+							// If there are values in the currenct column then add them to the current row array.
 							if (dbValue != NULL) {
 								// Convert the characters to string.
 								//[dataRowArray addObject:[NSString  stringWithUTF8String:dbValue]];
@@ -250,6 +261,7 @@
 						
 					}else {
 						// If could not execute the query
+						errorMessage = [NSString  stringWithUTF8String:sqlite3_errmsg(sqlite3Database)];
 						if (self.DEBUG_DBMANAGER) {
 							NSLog(@"DB Error: %s - Query: %s", sqlite3_errmsg(sqlite3Database),query);
 						}
@@ -260,6 +272,7 @@
 			default:{
 				
 				// In the database cannot be opened
+				errorMessage = [NSString  stringWithUTF8String:sqlite3_errmsg(sqlite3Database)];
 				if (self.DEBUG_DBMANAGER) {
 					NSLog(@"DB not opened %s", sqlite3_errmsg(sqlite3Database));
 				}
@@ -268,6 +281,8 @@
 		}
 		// Release the compiled statement from memory.
 		sqlite3_finalize(compiledStatement);
+	}else{
+		errorMessage = [NSString  stringWithUTF8String:sqlite3_errmsg(sqlite3Database)];
 	}
 }
 
@@ -280,21 +295,44 @@
 	
 	[self runQuery:[query UTF8String] isQueryExecutable:NO];
 	
-	return (NSArray *)self.fetchedRowArray;
+	return @[(NSArray *)self.fetchedRowArray,errorMessage];
 }
 
 - (NSArray *)executeQuery:(NSString *)query{
 	// Run the query and indicate that is executable.
 	[self runQuery:[query UTF8String] isQueryExecutable:YES];
+
+	NSNumber *affected = [[NSNumber alloc] initWithInt:0];
 	
-	return @[self.affectedRows,self.lastInsertedRowID];
+	if ([self.affectedRows isEqual:[NSNull null]] || (self.affectedRows == nil) || [[self.affectedRows description] isEqualToString:@"(null)"]) {
+		affected = 0;
+	}else{
+		affected = self.affectedRows;
+	}
+	
+	NSNumber *lastId = [[NSNumber alloc] initWithInt:0];
+	if ([self.lastInsertedRowID isEqual:[NSNull null]] || (self.lastInsertedRowID == nil) || [[self.lastInsertedRowID description] isEqualToString:@"(null)"]) {
+		lastId = 0;
+	}else{
+		lastId = self.lastInsertedRowID;
+	}
+	
+	//NSLog(@"Affected: %@ -- LastId: %@ -- Error: %@",affected,lastId,errorMessage);
+	
+	return @[affected,lastId,errorMessage];
 }
 
-- (void)openConnection{
+- (NSString *)openConnection{
 	
 	databasePath = [self.documentsDirectory stringByAppendingPathComponent:self.databaseFilename];
 	
 	openDatabaseResult = sqlite3_open([databasePath UTF8String], &sqlite3Database);
+	
+	if (openDatabaseResult == SQLITE_OK) {
+		return GDCDATABASE_OPEN_CONNECTION_OK;
+	}else{
+		return [NSString  stringWithUTF8String:sqlite3_errmsg(sqlite3Database)];
+	}
 }
 
 - (NSString *)closeConnection{
@@ -303,11 +341,11 @@
 	int returnValue = sqlite3_close_v2(sqlite3Database);
 	
 	if (returnValue == SQLITE_OK) {
-		return @"CLOSE CONNECTION";
+		return GDCDATABASE_CLOSE_CONNECTION_OK;
 	}else if (returnValue == SQLITE_BUSY){
-		return @"NOT CLOSED IS BUSY";
+		return GDCDATABASE_CLOSE_CONNECTION_BUSY;
 	}else{
-		return @"NOT CLOSED";
+		return GDCDATABASE_CLOSE_CONNECTION_ERROR;
 	}
 }
 
